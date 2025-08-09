@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Koala Kola Grand Prix — Retro Manager</title>
+<style>
+  /* Base */
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#0f0f13;color:#e9eef2;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+  h1,h2,h3{margin:.4rem 0}
+  .app{max-width:1200px;margin:0 auto;padding:16px}
+  .split{display:flex;justify-content:space-between;align-items:center}
+  .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:2px solid #2a2f49;background:#0e1222;font-weight:800;font-size:12px;color:#dfe9ff}
+  .nav{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+  .nav button{background:#1a1c24;color:#d7e2eb;border:2px solid #2b3040;padding:10px 14px;cursor:pointer;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;box-shadow:0 2px 0 #0b0c12}
+  .nav button.active{background:linear-gradient(180deg,#2c3956,#1f2840);border-color:#44537a;color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+  .card{background:#141721;border:2px solid #222436;border-radius:8px;padding:12px;box-shadow:inset 0 0 0 2px #0e1017}
+  .card h3{color:#a2c3ff;text-shadow:0 1px 0 #0a0d16}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .btn{background:#2a314d;color:#fff;border:2px solid #3a4670;border-radius:6px;padding:10px 12px;cursor:pointer;font-weight:800;text-transform:uppercase;letter-spacing:.04em;box-shadow:0 2px 0 #0b0c12}
+  .btn.primary{background:#3467ff;border-color:#4b77ff}
+  .btn.good{background:#15a16c;border-color:#1bc184}
+  .btn.warn{background:#c28a14;border-color:#dfac23}
+  .btn.danger{background:#b43e3e;border-color:#d35252}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .ctrl{display:grid;grid-template-columns:140px 1fr 64px;gap:10px;align-items:center;margin:6px 0}
+  label{color:#cfe3ff}
+  input[type=range]{width:100%;accent-color:#ffce5a}
+  input[type=number],select{background:#0e1120;color:#e8f1ff;border:2px solid #262b3b;padding:6px 8px;border-radius:6px;font-weight:600;width:100%}
+  table{width:100%;border-collapse:collapse;background:#0f1220;border:2px solid #262b3b;border-radius:6px;overflow:hidden}
+  thead th{background:#1b2136;color:#b6c8ff;text-align:left;padding:8px;font-weight:800;font-size:14px;border-bottom:2px solid #2b3450}
+  tbody td{padding:8px;border-bottom:1px dashed #252a3e;font-size:14px}
+  tbody tr:nth-child(odd) td{background:#111427}
+  tbody tr:hover td{background:#171a2f}
+  .avatar{width:56px;height:56px;border:2px solid #2e3b66;border-radius:4px;background:#0c0e18;display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 2px #070913}
+  .driver-tile{display:grid;grid-template-columns:56px 1fr;gap:10px;align-items:center;margin:8px 0 14px;padding-bottom:10px;border-bottom:1px dashed #2a2f49}
+  .driver-name{font-weight:900;font-size:15px;color:#f8faff}
+  .driver-meta{color:#a7b3d9;font-size:12px}
+  .map-wrap{background:#0b0d17;border:2px solid #22253a;border-radius:8px;padding:8px}
+  canvas.map{width:100%;height:300px;background:repeating-linear-gradient(45deg,#0c0f1b,#0c0f1b 12px,#0b0e19 12px,#0b0e19 24px);border:2px solid #2a2f49;border-radius:8px;display:block}
+  .legend{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;font-size:12px;color:#c7d5ff}
+  .badge{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;border:1px solid #111}
+  .hud{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .driver-hud{display:grid;grid-template-columns:56px 1fr;gap:8px;align-items:center;background:#121628;border:2px solid #28304c;border-radius:8px;padding:8px}
+  .progress{width:100%;height:8px;border-radius:6px;background:#0e1224;border:1px solid #2a2f49;overflow:hidden}
+  .progress>span{display:block;height:100%;background:linear-gradient(90deg,#4ae3ba,#4a8ae3);width:0%}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="split">
+    <h1>Koala Kola Grand Prix</h1>
+    <div class="pill">Retro Manager v1.5</div>
+  </div>
+  <div class="nav" id="nav"></div>
+
+  <!-- Main -->
+  <section id="page-main" class="page">
+    <div class="grid">
+      <div class="card" style="grid-column:span 6;">
+        <h3>Garage — Driver setup</h3>
+        <div id="garage-drivers"></div>
+      </div>
+      <div class="card" style="grid-column:span 6;">
+        <h3>Next race</h3>
+        <div id="next-race"></div>
+      </div>
+      <div class="card" style="grid-column:span 6;">
+        <h3>Leaderboard — Drivers</h3>
+        <div id="lb-drivers"></div>
+      </div>
+      <div class="card" style="grid-column:span 6;">
+        <h3>Leaderboard — Teams</h3>
+        <div id="lb-teams"></div>
+      </div>
+      <div class="card" style="grid-column:span 12;">
+        <h3>Season schedule</h3>
+        <div id="schedule"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Strategy -->
+  <section id="page-strategy" class="page" style="display:none;">
+    <div class="grid">
+      <div class="card" style="grid-column:span 7;">
+        <h3>Race strategy (per driver)</h3>
+        <div id="strategy-setup"></div>
+      </div>
+      <div class="card" style="grid-column:span 5;">
+        <h3>Race map preview</h3>
+        <div class="map-wrap">
+          <canvas id="map-preview" class="map"></canvas>
+          <div class="legend" id="legend-preview"></div>
+        </div>
+        <div class="mt12">
+          <button class="btn primary" id="btn-to-race">Go to race</button>
+          <small class="pill">Qualifying integrated into race pace — separate sim disabled</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Race -->
+  <section id="page-race" class="page" style="display:none;">
+    <div class="grid">
+      <div class="card" style="grid-column:span 8;">
+        <div class="split">
+          <h3>Race — Live map</h3>
+          <div class="row">
+            <button class="btn primary" id="btn-start-race">Start</button>
+            <button class="btn warn" id="btn-pause-race" disabled>Pause</button>
+            <button class="btn" id="btn-speed-1" disabled>×1</button>
+            <button class="btn" id="btn-speed-2" disabled>×2</button>
+            <button class="btn" id="btn-speed-4" disabled>×4</button>
+            <button class="btn" id="btn-speed-8" disabled>×8</button>
+            <button class="btn" id="btn-speed-16" disabled>×16</button>
+            <button class="btn danger" id="btn-skip" disabled>Skip to results</button>
+            <button class="btn good" id="btn-to-results" disabled>Results</button>
+          </div>
+        </div>
+        <div class="map-wrap mt8">
+          <canvas id="map-live" class="map"></canvas>
+          <div class="legend" id="legend-live"></div>
+        </div>
+        <div class="mt12 split">
+          <div class="pill" id="race-status">Grid ready</div>
+          <div class="pill" id="lap-status">Lap 0 / 0</div>
+        </div>
+      </div>
+      <div class="card" style="grid-column:span 4;">
+        <h3>Driver HUD</h3>
+        <div class="hud" id="hud"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section id="page-results" class="page" style="display:none;">
+    <div class="grid">
+      <div class="card" style="grid-column:span 12;">
+        <h3>Podium</h3>
+        <div id="podium"></div>
+      </div>
+      <div class="card" style="grid-column:span 12;">
+        <h3>Race results</h3>
+        <div id="results-table"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Season Summary -->
+<section id="page-season-summary" class="page" style="display:none;">
+  <div class="grid">
+    <div class="card" style="grid-column:span 12;">
+      <h3>🏆 Season Summary — Drivers</h3>
+      <div id="season-drivers"></div>
+    </div>
+    <div class="card" style="grid-column:span 12;">
+      <h3>🏆 Season Summary — Teams</h3>
+      <div id="season-teams"></div>
+    </div>
+    <div class="card" style="grid-column:span 12; text-align:center;">
+      <button class="btn primary" onclick="proceedToNextSeason()">Proceed to Next Season</button>
+    </div>
+  </div>
+</section>
+
+
+<script>
+/* ======================
+   State & data
+====================== */
+const RNG = (seedString => {let h=2166136261>>>0;for(let i=0;i<seedString.length;i++){h^=seedString.charCodeAt(i);h=Math.imul(h,16777619)}let s=h>>>0;return function(){s=(1103515245*s+12345)>>>0;return s/0xffffffff}});
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+const POINTS = [25,18,15,12,10,8,6,4,2,1];
+const game = {
+  teams:[], drivers:[], races:[],
+  currentRaceIndex:0, grid:[], results:[],
+  running:false, paused:false, speed:1, t:0, lap:0, totalLaps:0,
+  positions:[], seed: RNG("KoalaKola_v1.5"),
+  strategy:{} // driverId -> { startTire, stops:[{lap,tire}], aggressionDuringRace? }
+};
+
+function initData(){
+  const teams=[
+    {id:"T1",name:"Koala Kola",color:"#4ae3ba",points:0},
+    {id:"T2",name:"Crimson Comet",color:"#ff5a5a",points:0},
+    {id:"T3",name:"Iron Lynx",color:"#f39c4a",points:0},
+    {id:"T4",name:"Azure Apex",color:"#69a8ff",points:0},
+  ];
+  const drivers=[
+    {id:"D1",name:"Drift Panda",teamId:"T1",avatarSeed:"PANDA",points:0,aggression:50,downforce:50,pace:basePace("T1","PANDA")},
+    {id:"D2",name:"Rocket Rabbit",teamId:"T1",avatarSeed:"RABBIT",points:0,aggression:55,downforce:48,pace:basePace("T1","RABBIT")},
+    {id:"D3",name:"Blaze Viper",teamId:"T2",avatarSeed:"VIPER",points:0,aggression:60,downforce:46,pace:basePace("T2","VIPER")},
+    {id:"D4",name:"Crimson Nova",teamId:"T2",avatarSeed:"NOVA",points:0,aggression:52,downforce:50,pace:basePace("T2","NOVA")},
+    {id:"D5",name:"Steel Falcon",teamId:"T3",avatarSeed:"FALCON",points:0,aggression:47,downforce:52,pace:basePace("T3","FALCON")},
+    {id:"D6",name:"Bronze Badger",teamId:"T3",avatarSeed:"BADGER",points:0,aggression:45,downforce:53,pace:basePace("T3","BADGER")},
+    {id:"D7",name:"Blue Bolt",teamId:"T4",avatarSeed:"BOLT",points:0,aggression:58,downforce:49,pace:basePace("T4","BOLT")},
+    {id:"D8",name:"Sapphire Stingray",teamId:"T4",avatarSeed:"STINGRAY",points:0,aggression:50,downforce:51,pace:basePace("T4","STINGRAY")},
+  ];
+  const races=[
+    {name:"Monza Retro",location:"Monza, ITA",laps:30,date:"2025-09-14",map:{type:"oval",a:.48,b:.38},weather:{sun:.6,clouds:.3,rain:.1}},
+    {name:"Desert Dune",location:"Sakhir, BHR",laps:28,date:"2025-09-28",map:{type:"oval",a:.52,b:.32},weather:{sun:.8,clouds:.15,rain:.05}},
+    {name:"Forest Ring",location:"Spielberg, AUT",laps:32,date:"2025-10-12",map:{type:"oval",a:.45,b:.34},weather:{sun:.5,clouds:.35,rain:.15}},
+  ];
+  game.teams=teams; game.drivers=drivers; game.races=races; game.currentRaceIndex=0;
+}
+function basePace(teamId,seed){ const teamBonus={T1:1.08,T2:1.03,T3:1.00,T4:1.01}[teamId]||1; const r=RNG(seed); return teamBonus*(0.96+r()*0.08); }
+
+/* Avatars (pixel SVG) */
+function avatarSVG(seedStr,colorHex){const rand=RNG(seedStr);const bg="#0b0e19";const accents=[colorHex,"#ffffff","#ffd166","#ef476f","#06d6a0","#118ab2"];const a1=accents[(rand()*accents.length)|0],a2=accents[(rand()*accents.length)|0],a3=accents[(rand()*accents.length)|0];let rects="";const pix=[];for(let y=0;y<8;y++){for(let x=0;x<8;x++){const r=rand();let c=(r<.08)?a3:(r<.18?a2:(r<.28?a1:null));pix.push(c)}}const S=7;for(let i=0;i<pix.length;i++){const c=pix[i];if(!c)continue;const x=(i%8)*S,y=((i/8)|0)*S;rects+=`<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="${c}"/>`}return `<svg viewBox="0 0 56 56" width="56" height="56" xmlns="http://www.w3.org/2000/svg"><rect width="56" height="56" rx="4" fill="${bg}"/>${rects}<rect x="0" y="0" width="56" height="56" rx="4" fill="none" stroke="#2e3b66" stroke-width="2"/></svg>`;}
+function colorForTeam(teamId){return (game.teams.find(t=>t.id===teamId)?.color)||"#ccc"}
+
+/* Track drawing */
+function drawTrack(ctx,w,h,race){
+  ctx.clearRect(0,0,w,h);
+  const cx=w/2,cy=h/2,a=Math.min(w,h)*race.map.a,b=Math.min(w,h)*race.map.b;
+  ctx.strokeStyle="#2c314a";ctx.lineWidth=Math.max(8,Math.min(w,h)*.05);ctx.beginPath();
+  for(let t=0;t<=Math.PI*2+.01;t+=.02){const x=cx+a*Math.cos(t),y=cy+b*Math.sin(t);(t===0)?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke();
+  ctx.strokeStyle="#cdd7ff";ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.beginPath();
+  for(let t=0;t<=Math.PI*2+.01;t+=.04){const x=cx+(a-10)*Math.cos(t),y=cy+(b-10)*Math.sin(t);(t===0)?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke();ctx.setLineDash([]);
+}
+function curveFromS(s,race,w,h){const t=s*Math.PI*2,cx=w/2,cy=h/2,a=Math.min(w,h)*race.map.a,b=Math.min(w,h)*race.map.b;const x=cx+a*Math.cos(t),y=cy+b*Math.sin(t);return {x,y}}
+
+/* UI helpers */
+function $(id){return document.getElementById(id)}
+function navigateTo(id){document.querySelectorAll(".page").forEach(p=>p.style.display=(p.id===id)?"":"none");document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active","page-"+b.textContent.toLowerCase()===id));if(id==="page-main"){renderMain()}else if(id==="page-strategy"){renderStrategy()}else if(id==="page-race"){renderRace()}else if(id==="page-results"){renderResults()}else if (id==="page-season-summary"){renderSeasonSummary()}}
+function renderNav(){const nav=$("nav"); if(!nav) return;}
+/* Main page sections */
+function renderMain(){
+  renderGarageDrivers();
+  renderNextRace();
+  renderLeaderboards();
+  renderSchedule();
+}
+function renderGarageDrivers(){
+  const div=$("garage-drivers"); const my=game.teams.find(t=>t.name==="Koala Kola"); const ds=game.drivers.filter(d=>d.teamId===my.id);
+  div.innerHTML=ds.map(d=>`
+    <div class="driver-tile">
+      <div class="avatar">${avatarSVG(d.avatarSeed,colorForTeam(d.teamId))}</div>
+      <div>
+        <div class="driver-name">${d.name}</div>
+        <div class="driver-meta">Team: ${my.name}</div>
+        <div class="ctrl"><label>Aggression</label><input type="range" min="0" max="100" value="${d.aggression}" data-did="${d.id}" data-k="aggression"/><span>${d.aggression}</span></div>
+        <div class="ctrl"><label>Downforce</label><input type="range" min="0" max="100" value="${d.downforce}" data-did="${d.id}" data-k="downforce"/><span>${d.downforce}</span></div>
+      </div>
+    </div>
+  `).join("");
+  div.querySelectorAll('input[type="range"]').forEach(inp=>{
+    inp.addEventListener("input",()=>{
+      const d=game.drivers.find(x=>x.id===inp.dataset.did); d[inp.dataset.k]=+inp.value; inp.parentElement.querySelector("span").textContent=d[inp.dataset.k];
+    });
+  });
+}
+function renderNextRace(){
+  const div=$("next-race"), r=game.races[game.currentRaceIndex], mapId="map-next";
+  div.innerHTML=`
+    <div class="row">
+      <div><div><strong>${r.name}</strong></div><div class="muted">${r.location}</div></div>
+      <div class="pill">Date: ${r.date}</div><div class="pill">Laps: ${r.laps}</div>
+    </div>
+    <div class="mt8"><small class="muted">Forecast: Sunny ${(r.weather.sun*100)|0}% • Cloudy ${(r.weather.clouds*100)|0}% • Rain ${(r.weather.rain*100)|0}%</small></div>
+    <div class="map-wrap mt12"><canvas id="${mapId}" class="map"></canvas><div class="legend" id="legend-next"></div></div>
+  `;
+  setTimeout(()=>{const c=$(mapId),ctx=c.getContext("2d"),w=c.clientWidth,h=c.clientHeight;c.width=w*devicePixelRatio;c.height=h*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);drawTrack(ctx,w,h,r);$("legend-next").innerHTML=`<span class="badge"><span class="dot" style="background:#2c314a"></span>Track</span><span class="badge"><span class="dot" style="background:#cdd7ff"></span>Inner</span>`},0);
+}
+function renderLeaderboards(){
+  const dSorted=[...game.drivers].sort((a,b)=>b.points-a.points);
+  $("lb-drivers").innerHTML=`
+    <table><thead><tr><th>#</th><th>Driver</th><th>Team</th><th class="center">PTS</th></tr></thead>
+    <tbody>${dSorted.map((d,i)=>`<tr><td>${i+1}</td><td><span class="dot" style="background:${colorForTeam(d.teamId)}"></span> ${d.name}</td><td>${game.teams.find(t=>t.id===d.teamId).name}</td><td class="center"><strong>${d.points}</strong></td></tr>`).join("")}</tbody></table>`;
+  const tSorted=[...game.teams].sort((a,b)=>b.points-a.points);
+  $("lb-teams").innerHTML=`
+    <table><thead><tr><th>#</th><th>Team</th><th class="center">PTS</th></tr></thead>
+    <tbody>${tSorted.map((t,i)=>`<tr><td>${i+1}</td><td><span class="dot" style="background:${t.color}"></span> ${t.name}</td><td class="center"><strong>${t.points}</strong></td></tr>`).join("")}</tbody></table>`;
+}
+function renderSchedule(){
+  const r=game.races;
+  $("schedule").innerHTML=`
+    <table><thead><tr><th>#</th><th>Grand Prix</th><th>Location</th><th>Date</th><th class="center">Laps</th></tr></thead>
+    <tbody>${r.map((g,i)=>`<tr><td>${i+1}</td><td>${g.name}</td><td>${g.location}</td><td>${g.date}</td><td class="center">${g.laps}</td></tr>`).join("")}</tbody></table>`;
+}
+
+/* Strategy page */
+function renderStrategy(){
+  const div=$("strategy-setup");
+  const my=game.teams.find(t=>t.name==="Koala Kola"); const ds=game.drivers.filter(d=>d.teamId===my.id);
+  div.innerHTML=ds.map(d=>{
+    const st=game.strategy[d.id]||defaultStrategyFor(d);
+    return `
+      <div class="driver-tile">
+        <div class="avatar">${avatarSVG(d.avatarSeed,colorForTeam(d.teamId))}</div>
+        <div>
+          <div class="driver-name">${d.name}</div>
+          <div class="ctrl">
+            <label>Start tire</label>
+            <select data-did="${d.id}" data-k="startTire">
+              ${["Soft","Medium","Hard"].map(o=>`<option ${st.startTire===o?"selected":""}>${o}</option>`).join("")}
+            </select>
+            <span></span>
+          </div>
+          <div class="ctrl">
+            <label>Stops</label>
+            <select data-did="${d.id}" data-k="stopsCount">
+              ${[0,1,2].map(n=>`<option value="${n}" ${st.stops.length===n?"selected":""}>${n}</option>`).join("")}
+            </select>
+            <span>${st.stops.length}</span>
+          </div>
+          <div id="stops-${d.id}">${renderStopsRows(d.id, st)}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // attach
+  div.querySelectorAll("select[data-k]").forEach(sel=>{
+    sel.addEventListener("change",()=>{
+      const dId=sel.dataset.did; const key=sel.dataset.k;
+      const st = game.strategy[dId] || (game.strategy[dId]=defaultStrategyForId(dId));
+      if(key==="startTire"){ st.startTire = sel.value; }
+      if(key==="stopsCount"){
+        const count = parseInt(sel.value,10);
+        st.stops = buildStops(count, game.races[game.currentRaceIndex].laps);
+        $(`stops-${dId}`).innerHTML = renderStopsRows(dId, st);
+        bindStopsEditors(dId);
+      }
+    });
+  });
+  // bind per-stop editors
+  ds.forEach(d=>bindStopsEditors(d.id));
+
+  // map preview
+  const c=$("map-preview"),ctx=c.getContext("2d"),r=game.races[game.currentRaceIndex],w=c.clientWidth,h=c.clientHeight;
+  c.width=w*devicePixelRatio; c.height=h*devicePixelRatio; ctx.scale(devicePixelRatio,devicePixelRatio); drawTrack(ctx,w,h,r);
+  $("legend-preview").innerHTML=game.drivers.map(d=>`<span class="badge"><span class="dot" style="background:${colorForTeam(d.teamId)}"></span>${d.name}</span>`).join("");
+  $("btn-to-race").onclick=()=>navigateTo("page-race");
+}
+function defaultStrategyFor(d){return {startTire:"Soft",stops:[{lap:Math.floor(game.races[game.currentRaceIndex].laps/2),tire:"Medium"}]}}
+function defaultStrategyForId(id){return defaultStrategyFor(game.drivers.find(x=>x.id===id))}
+function buildStops(count,laps){const arr=[];for(let i=0;i<count;i++){arr.push({lap:clamp(Math.floor(laps*(i+1)/(count+1)),2,laps-2),tire:i===count-1?"Hard":"Medium"})}return arr}
+function renderStopsRows(dId, st){
+  const laps=game.races[game.currentRaceIndex].laps;
+  if(!st.stops.length) return `<small class="muted">No-stop run — manage tires to the end.</small>`;
+  return st.stops.map((s,idx)=>`
+    <div class="ctrl">
+      <label>Stop ${idx+1}: lap</label>
+      <input type="number" min="2" max="${laps-1}" value="${s.lap}" data-did="${dId}" data-idx="${idx}" data-k="lap"/>
+      <select data-did="${dId}" data-idx="${idx}" data-k="tire">
+        ${["Soft","Medium","Hard"].map(o=>`<option ${s.tire===o?"selected":""}>${o}</option>`).join("")}
+      </select>
+    </div>
+  `).join("");
+}
+
+function proceedToNextRace() {
+  if (game.currentRaceIndex < game.races.length - 1) {
+    game.currentRaceIndex++;
+    resetRaceState();
+    navigateTo("page-main");
+  } else {
+    navigateTo("page-season-summary");
+  }
+}
+
+function proceedToNextSeason() {
+  game.drivers.forEach(d => d.points = 0);
+  game.teams.forEach(t => t.points = 0);
+  game.currentRaceIndex = 0;
+  navigateTo("page-main");
+}
+
+
+
+function renderResults() {
+  const podiumDiv = $("podium");
+  const resultsTable = $("results-table");
+
+  if (!game.results.length) {
+    podiumDiv.innerHTML = "<p>No results available.</p>";
+    resultsTable.innerHTML = "";
+    return;
+  }
+
+  const finalOrder = game.results.map(id => game.drivers.find(d => d.id === id));
+  podiumDiv.innerHTML = `
+    <div class="podium">
+      🥇 ${finalOrder[0].name} | 🥈 ${finalOrder[1].name} | 🥉 ${finalOrder[2].name}
+    </div>
+  `;
+
+  resultsTable.innerHTML = `
+    <table>
+      <thead><tr><th>#</th><th>Driver</th><th>Team</th><th>Points</th></tr></thead>
+      <tbody>
+        ${finalOrder.map((d, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${d.name}</td>
+            <td>${game.teams.find(t => t.id === d.teamId).name}</td>
+            <td>${POINTS[i] || 0}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+    <div style="margin-top:16px;">
+      <button class="btn primary" onclick="proceedToNextRace()">Proceed to Next Race</button>
+    </div>
+  `;
+}
+
+
+function renderSeasonSummary() {
+  const driversSorted = [...game.drivers].sort((a, b) => b.points - a.points);
+  const teamsSorted = [...game.teams].sort((a, b) => b.points - a.points);
+
+  $("season-drivers").innerHTML = `
+    <table>
+      <thead><tr><th>#</th><th>Driver</th><th>Team</th><th>Points</th></tr></thead>
+      <tbody>
+        ${driversSorted.map((d, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${d.name}</td>
+            <td>${game.teams.find(t => t.id === d.teamId).name}</td>
+            <td>${d.points}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+
+  $("season-teams").innerHTML = `
+    <table>
+      <thead><tr><th>#</th><th>Team</th><th>Points</th></tr></thead>
+      <tbody>
+        ${teamsSorted.map((t, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${t.name}</td>
+            <td>${t.points}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+
+function bindStopsEditors(dId){
+  const wrap = $(`stops-${dId}`);
+  wrap.querySelectorAll("input[data-k=lap]").forEach(inp=>{
+    inp.addEventListener("input",()=>{
+      const st = game.strategy[dId] || (game.strategy[dId]=defaultStrategyForId(dId));
+      const idx = parseInt(inp.dataset.idx,10);
+      const laps=game.races[game.currentRaceIndex].laps;
+      st.stops[idx].lap = clamp(parseInt(inp.value||st.stops[idx].lap,10),2,laps-1);
+    });
+  });
+  wrap.querySelectorAll("select[data-k=tire]").forEach(sel=>{
+    sel.addEventListener("change",()=>{
+      const st = game.strategy[dId] || (game.strategy[dId]=defaultStrategyForId(dId));
+      const idx = parseInt(sel.dataset.idx,10);
+      st.stops[idx].tire = sel.value;
+    });
+  });
+}
+
+/* Race page */
+let raceRAF=null,lastFrameTime=0;
+function renderRace(){
+  // ensure strategy exists for all drivers
+  game.drivers.forEach(d=>{ if(!game.strategy[d.id]) game.strategy[d.id]=defaultStrategyFor(d); });
+
+  // canvas + legend
+  const canvas=$("map-live"),ctx=canvas.getContext("2d"),r=game.races[game.currentRaceIndex],w=canvas.clientWidth,h=canvas.clientHeight;
+  canvas.width=w*devicePixelRatio; canvas.height=h*devicePixelRatio; ctx.scale(devicePixelRatio,devicePixelRatio); drawTrack(ctx,w,h,r);
+  $("legend-live").innerHTML=game.drivers.map(d=>`<span class="badge"><span class="dot" style="background:${colorForTeam(d.teamId)}"></span>${d.name}</span>`).join("");
+
+  // HUD with live aggression sliders for Koala Kola
+  const hud=$("hud"); const my=game.teams.find(t=>t.name==="Koala Kola"); const ds=game.drivers.filter(d=>d.teamId===my.id);
+  const others=game.drivers.filter(d=>d.teamId!==my.id);
+  hud.innerHTML = ds.concat(others).map(d=>`
+    <div class="driver-hud" id="hud-${d.id}">
+      <div class="avatar">${avatarSVG(d.avatarSeed,colorForTeam(d.teamId))}</div>
+      <div>
+        <div class="split"><strong>${d.name}</strong><span class="pill" id="hud-pos-${d.id}">P–</span></div>
+        <div class="progress mt8"><span id="hud-prog-${d.id}" style="width:0%"></span></div>
+        ${d.teamId===my.id?`
+          <div class="ctrl" style="grid-template-columns:100px 1fr 44px;margin-top:8px">
+            <label>Aggr</label>
+            <input type="range" min="0" max="100" value="${d.aggression}" data-live-aggr="${d.id}"/>
+            <span>${d.aggression}</span>
+          </div>`:''}
+        <small class="muted">DF ${d.downforce} • Pace ${(d.pace*100).toFixed(0)}%</small>
+      </div>
+    </div>
+  `).join("");
+
+  hud.querySelectorAll('input[data-live-aggr]').forEach(inp=>{
+    inp.addEventListener("input",()=>{
+      const d=game.drivers.find(x=>x.id===inp.dataset.liveAggr);
+      d.aggression=+inp.value;
+      inp.parentElement.querySelector("span").textContent=d.aggression;
+    });
+  });
+
+  // buttons
+  $("btn-start-race").onclick=startRace;
+  $("btn-pause-race").onclick=togglePause;
+  const speeds=[1,2,4,8,16];
+  speeds.forEach(s=>{
+    const btn=$(`btn-speed-${s}`); btn.onclick=()=>setSpeed(s);
+  });
+  $("btn-skip").onclick=skipToResults;
+  $("btn-to-results").onclick=()=>navigateTo("page-results");
+
+  updateRaceUIStatus("Grid ready");
+  $("lap-status").textContent=`Lap 0 / ${r.laps}`;
+  resetRaceState();
+}
+function updateRaceUIStatus(msg){$("race-status").textContent=msg}
+function setSpeed(s){ game.speed=s; [1,2,4,8,16].forEach(v=>{const b=$(`btn-speed-${v}`); if(b) b.disabled=false;}); const active=$(`btn-speed-${s}`); if(active) active.disabled=true; }
+
+/* Qualifying integrated into start order via lightweight model */
+function computeGrid(){
+  const r=game.races[game.currentRaceIndex]; const rng=RNG(r.name+r.date);
+  const perf=game.drivers.map(d=>{
+    // Use downforce and aggression balance + tiny random
+    const ag=d.aggression/100, df=d.downforce/100;
+    const balance = 1 + ag*0.02 - df*0.01;
+    const noise = 0.98 + rng()*0.04;
+    const v=d.pace*balance*noise;
+    return {id:d.id,v};
+  }).sort((a,b)=>b.v-a.v);
+  game.grid = perf.map(x=>x.id);
+}
+
+/* Race lifecycle */
+function resetRaceState(){
+  computeGrid();
+  const r=game.races[game.currentRaceIndex], order=game.grid.length?game.grid:game.drivers.map(d=>d.id);
+  game.positions = order.map((id,idx)=>({id,s:0,lap:0,grid:idx+1, tire:null, nextStopIdx:0}));
+  game.lap=0; game.totalLaps=r.laps; game.t=0; game.results=[]; game.running=false; game.paused=false; game.speed=1;
+
+  // set tires
+  game.positions.forEach(p=>{
+    const st=game.strategy[p.id]||defaultStrategyForId(p.id);
+    p.tire=st.startTire;
+  });
+
+  // UI buttons state
+  $("btn-start-race").disabled=false;
+  ["pause-race","speed-1","speed-2","speed-4","speed-8","speed-16","skip"].forEach(s=>{$(`btn-${s}`).disabled=true});
+  $("btn-to-results").disabled=true;
+}
+function startRace(){
+  if(!game.positions.length) resetRaceState();
+  game.running=true; game.paused=false; lastFrameTime=performance.now();
+  $("btn-pause-race").disabled=false;
+  [1,2,4,8,16].forEach(v=>$(`btn-speed-${v}`).disabled=false);
+  $("btn-start-race").disabled=true;
+  $("btn-skip").disabled=false;
+  setSpeed(1);
+  updateRaceUIStatus("Racing...");
+  requestNextFrame();
+}
+function togglePause(){
+  if(!game.running) return; game.paused=!game.paused;
+  $("btn-pause-race").textContent = game.paused ? "Resume" : "Pause";
+  updateRaceUIStatus(game.paused ? "Paused" : "Racing...");
+  if(!game.paused){ lastFrameTime=performance.now(); requestNextFrame(); }
+}
+function skipToResults(){
+  // simulate instantly to finish
+  while(game.running && !game.paused){
+    if(tickRace(0.2,true)) break; // advance with big steps
+  }
+  drawLive(); bindLapAndHUD(); // final paint
+  endRaceFinalize();
+  navigateTo("page-results");
+}
+
+
+
+function requestNextFrame(){ cancelAnimationFrame(raceRAF); raceRAF=requestAnimationFrame(frame); }
+function frame(now){
+  const dt=Math.min(0.05,(now-lastFrameTime)/1000)*game.speed; lastFrameTime=now;
+  if(game.running && !game.paused){
+    const finished = tickRace(dt,false);
+    drawLive(); bindLapAndHUD();
+    if(!finished){ requestNextFrame(); } else { endRaceFinalize(); }
+  }
+}
+
+/* Physics + strategy */
+function tickRace(dt, fast){
+  const r=game.races[game.currentRaceIndex];
+  // advance progress
+  for(const p of game.positions){
+    const d=game.drivers.find(x=>x.id===p.id);
+    const st=game.strategy[p.id]||defaultStrategyForId(p.id);
+    // base speed
+    const ag=d.aggression/100, df=d.downforce/100;
+    let speed = (1/85) * d.pace * (1 + ag*0.03 - df*0.01);
+    // tire modifier
+    const tireMod = p.tire==="Soft"?1.03 : p.tire==="Medium"?1.00 : 0.98;
+    speed *= tireMod;
+    // small randomness
+    speed *= (1 + (Math.random()-0.5)*0.004);
+    // apply
+    p.s += dt * speed;
+  }
+  // simple overtake chance
+  const order=[...game.positions].sort((A,B)=>(A.lap!==B.lap)?B.lap-A.lap:B.s-A.s);
+  for(let i=0;i<order.length-1;i++){
+    const front=order[i], back=order[i+1];
+    const df=game.drivers.find(x=>x.id===front.id), db=game.drivers.find(x=>x.id===back.id);
+    const gap=(front.lap+front.s)-(back.lap+back.s);
+    if(gap<0.005 && Math.random() < (0.05 + (db.aggression-df.aggression)/200)){
+      back.s += 0.01;
+    }
+  }
+  // lap cross & pit stops
+  for(const p of game.positions){
+    while(p.s>=1){
+      p.s-=1; p.lap+=1; game.lap=Math.max(game.lap,p.lap);
+      // pit check on lap entry
+      const st=game.strategy[p.id]||defaultStrategyForId(p.id);
+      if(p.nextStopIdx < st.stops.length){
+        const nxt=st.stops[p.nextStopIdx];
+        if(p.lap===nxt.lap){
+          // pit loss modeled as progress penalty
+          p.s = Math.max(0, p.s - 0.18); // pit lane loss ~ 18% lap
+          p.tire = nxt.tire;
+          p.nextStopIdx++;
+        }
+      }
+    }
+  }
+  $("lap-status").textContent=`Lap ${game.lap} / ${r.laps}`;
+  // finish
+  if(game.positions.some(p=>p.lap>=r.laps)){ return true; }
+  return false;
+}
+function endRaceFinalize(){
+  if(!game.running) return;
+  game.running=false;
+  // final order
+  const r=game.races[game.currentRaceIndex];
+  const fin=[...game.positions].sort((A,B)=> (B.lap+B.s)-(A.lap+A.s)).map(x=>x.id);
+  game.results = fin;
+  // points
+  fin.forEach((id,i)=>{ const d=game.drivers.find(x=>x.id===id); d.points += (POINTS[i]||0); });
+  // team points
+  game.teams.forEach(t=>{ t.points=game.drivers.filter(d=>d.teamId===t.id).reduce((a,b)=>a+b.points,0); });
+  // buttons
+  $("btn-pause-race").disabled=true; [1,2,4,8,16].forEach(v=>$(`btn-speed-${v}`).disabled=true);
+  $("btn-skip").disabled=true; $("btn-to-results").disabled=false;
+  updateRaceUIStatus("Finished");
+}
+
+/* Drawing live */
+function drawLive(){
+  const c=$("map-live"); if(!c) return; const ctx=c.getContext("2d");
+  const r=game.races[game.currentRaceIndex], w=c.clientWidth, h=c.clientHeight; drawTrack(ctx,w,h,r);
+  const order=getOrderByProgress();
+  for(const p of game.positions){
+    const d=game.drivers.find(x=>x.id===p.id); const {x,y}=curveFromS((p.s%1+1)%1,r,w,h); const col=colorForTeam(d.teamId);
+    ctx.save(); ctx.translate(x,y);
+    ctx.fillStyle=col; ctx.strokeStyle="#0b0d17"; ctx.lineWidth=2; ctx.beginPath(); ctx.roundRect(-7,-4,14,8,2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle="#111521"; ctx.fillRect(-3,-3,6,6); ctx.fillStyle="#fff"; ctx.font="8px monospace"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(String(order.indexOf(p.id)+1),0,0);
+    ctx.restore();
+  }
+}
+function getOrderByProgress(){return [...game.positions].sort((A,B)=>(A.lap!==B.lap)?B.lap-A.lap:B.s-A.s).map(x=>x.id)}
+function bindLapAndHUD(){
+  const r=game.races[game.currentRaceIndex], order=getOrderByProgress();
+  for(const p of game.positions){
+    const d=game.drivers.find(x=>x.id===p.id);
+    const pos=order.indexOf(p.id)+1, pct=Math.min(100,((p.lap+p.s)/r.laps)*100);
+    const pill=$(`hud-pos-${d.id}`), prog=$(`hud-prog-${d.id}`); if(pill) pill.textContent=`P${pos}`; if(prog) prog.style.width=pct.toFixed(2)+"%";
+  }
+}
+
+/* Init */
+function buildNav(){
+  const nav=$("nav"); // container with id=nav
+  const pages=[{id:"page-main",label:"Main"},{id:"page-strategy",label:"Strategy"},{id:"page-race",label:"Race"},{id:"page-results",label:"Results"}];
+  const el=$("nav"); el.innerHTML=""; pages.forEach(p=>{const b=document.createElement("button"); b.textContent=p.label; b.onclick=()=>navigateTo(p.id); el.appendChild(b)}); document.querySelectorAll(".nav button")[0].classList.add("active");
+}
+function boot(){
+  initData();
+  buildNav();
+  renderMain();
+}
+boot();
+</script>
+</html>
